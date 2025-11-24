@@ -261,6 +261,36 @@ app.get("/templates/:id", async (req, res) => {
   }
 });
 
+//PUT
+app.put("/templates/:id", async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+    const { title, content } = req.body;
+
+    const userTemplate = await prisma.template.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!userTemplate) {
+      return res.status(404).json({ message: "Template not found!" });
+    }
+
+    if (userTemplate.userId !== userId) {
+      return res.status(403).json({ message: "Access denied!" });
+    }
+
+    const updatedTemplate = await prisma.template.update({
+      data: { title, content, userId },
+      where: { id: Number(id) },
+    });
+
+    res.status(200).json({ message: "Template updated:", updatedTemplate });
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+});
+
 //server
 app.listen(3000, () => {
   console.log(`Selvagem! Server is running on: http://localhost:3000`);
