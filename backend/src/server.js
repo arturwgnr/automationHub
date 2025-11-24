@@ -159,7 +159,7 @@ app.put("/estimates/:id", async (req, res) => {
       data: { title, clientName, description, price },
       where: { id: Number(id) },
     });
-
+    //teste
     res
       .status(200)
       .json({ message: "Estimate updated successfully", updatedEstimates });
