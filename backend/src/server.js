@@ -20,6 +20,7 @@ app.get("/", (req, res) => {
   res.send("🌌 I have all that I need in order to succeed!");
 });
 
+//-------------------------------------------
 //AUTH
 //POST
 app.post("/register", async (req, res) => {
@@ -78,6 +79,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
+//-------------------------------------------
 //ESTIMATES
 //POST
 app.post("/estimates", async (req, res) => {
@@ -159,7 +161,7 @@ app.put("/estimates/:id", async (req, res) => {
       data: { title, clientName, description, price },
       where: { id: Number(id) },
     });
-    //teste
+
     res
       .status(200)
       .json({ message: "Estimate updated successfully", updatedEstimates });
@@ -193,6 +195,69 @@ app.delete("/estimates/:id", async (req, res) => {
     res.status(200).json({ message: "Deleted successfully", deletedEstimate });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+//-------------------------------------------
+//1- Templates: POST GET DELETE PUT (Cada template pertence ao usuário → userId);
+
+//TEMPLATES
+//POST
+app.post("/templates", async (req, res) => {
+  try {
+    const { title, content } = req.body;
+    const userId = req.userId;
+
+    const newTemplate = await prisma.template.create({
+      data: { title, content, userId },
+    });
+
+    res
+      .status(201)
+      .json({ message: "Template created successfully", newTemplate });
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+});
+
+//GET
+app.get("/templates", async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const userTemplates = await prisma.template.findMany({
+      where: { userId },
+    });
+
+    if (userTemplates.length === 0) {
+      return res.status(200).json({ message: "User has no templates yet" });
+    }
+
+    res.status(200).json({ message: "User templates:", userTemplates });
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+});
+
+app.get("/templates/:id", async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+    const userTemplate = await prisma.template.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!userTemplate) {
+      return res.status(404).json({ message: "Template not found!" });
+    }
+
+    if (userTemplate.userId !== userId) {
+      return res.status(403).json({ message: "Access denied!" });
+    }
+
+    res.status(200).json({ message: "User template:", userTemplate });
+  } catch (error) {
+    res.status(500).json({ error: error });
   }
 });
 
