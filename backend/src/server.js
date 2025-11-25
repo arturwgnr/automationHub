@@ -199,14 +199,12 @@ app.delete("/estimates/:id", async (req, res) => {
 });
 
 //-------------------------------------------
-//1- Templates: POST GET DELETE PUT (Cada template pertence ao usuário → userId);
-
 //TEMPLATES
 //POST
 app.post("/templates", async (req, res) => {
   try {
-    const { title, content } = req.body;
     const userId = req.userId;
+    const { title, content } = req.body;
 
     const newTemplate = await prisma.template.create({
       data: { title, content, userId },
@@ -294,4 +292,67 @@ app.put("/templates/:id", async (req, res) => {
 //server
 app.listen(3000, () => {
   console.log(`Selvagem! Server is running on: http://localhost:3000`);
+});
+
+//-------------------------------------------
+//APPOINTMENT
+//GET
+app.get("/appointments", async (req, res) => {
+  try {
+    const userId = req.userId;
+    const userAppointments = await prisma.appointment.findMany({
+      where: { userId },
+    });
+
+    if (userId !== userAppointments.userId) {
+      return res.status(403).json({ message: "Access denied!" });
+    }
+
+    if (userAppointments.length === 0) {
+      return res.status(200).json({ message: "User has no appointments yet." });
+    }
+
+    res.status(200).json({ message: "User appointments:", userAppointments });
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+});
+
+app.get("/appointments/:id", async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+
+    const userAppointment = await prisma.appointment.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (userId !== userAppointment.userId) {
+      return res.status(403).json({ message: "Access Denied!" });
+    }
+
+    if (!userAppointment) {
+      res.status(200).json({ message: "User appointment not found" });
+    }
+
+    res.status(200).json({ message: "User appointment:", userAppointment });
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+});
+
+//POST
+app.post("/appointments", async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { title, date, hour } = req.body;
+
+    const newAppointment = await prisma.appointment.create({
+      data: { title, date, hour, userId },
+    });
+
+    res.status(201).json({ message: "Appointment created", newAppointment });
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
 });
