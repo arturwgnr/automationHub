@@ -296,53 +296,51 @@ app.listen(3000, () => {
 
 //-------------------------------------------
 //APPOINTMENT
-//GET
-app.get("/appointments", async (req, res) => {
+// GET ALL APPOINTMENTS
+app.get("/appointments", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
-    const userAppointments = await prisma.appointment.findMany({
+
+    const appointments = await prisma.appointment.findMany({
       where: { userId },
     });
 
-    if (userId !== userAppointments.userId) {
-      return res.status(403).json({ message: "Access denied!" });
-    }
-
-    if (userAppointments.length === 0) {
+    if (appointments.length === 0) {
       return res.status(200).json({ message: "User has no appointments yet." });
     }
 
-    res.status(200).json({ message: "User appointments:", userAppointments });
+    res.status(200).json({ message: "User appointments:", appointments });
   } catch (error) {
-    res.status(500).json({ error: error });
+    res.status(500).json({ error });
   }
 });
 
-app.get("/appointments/:id", async (req, res) => {
+// GET ONE APPOINTMENT
+app.get("/appointments/:id", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
 
-    const userAppointment = await prisma.appointment.findUnique({
+    const appointment = await prisma.appointment.findUnique({
       where: { id: Number(id) },
     });
 
-    if (userId !== userAppointment.userId) {
-      return res.status(403).json({ message: "Access Denied!" });
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found!" });
     }
 
-    if (!userAppointment) {
-      res.status(200).json({ message: "User appointment not found" });
+    if (appointment.userId !== userId) {
+      return res.status(403).json({ message: "Access denied!" });
     }
 
-    res.status(200).json({ message: "User appointment:", userAppointment });
+    res.status(200).json({ message: "User appointment:", appointment });
   } catch (error) {
-    res.status(500).json({ error: error });
+    res.status(500).json({ error });
   }
 });
 
-//POST
-app.post("/appointments", async (req, res) => {
+// POST APPOINTMENT
+app.post("/appointments", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
     const { title, date, hour } = req.body;
@@ -351,8 +349,66 @@ app.post("/appointments", async (req, res) => {
       data: { title, date, hour, userId },
     });
 
-    res.status(201).json({ message: "Appointment created", newAppointment });
+    res.status(201).json({ message: "Appointment created!", newAppointment });
   } catch (error) {
-    res.status(500).json({ error: error });
+    res.status(500).json({ error });
+  }
+});
+
+// UPDATE APPOINTMENT
+app.put("/appointments/:id", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+    const { title, date, hour } = req.body;
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found!" });
+    }
+
+    if (appointment.userId !== userId) {
+      return res.status(403).json({ message: "Access denied!" });
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id: Number(id) },
+      data: { title, date, hour },
+    });
+
+    res.status(200).json({ message: "Appointment updated!", updated });
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+});
+
+// DELETE APPOINTMENT
+app.delete("/appointments/:id", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found!" });
+    }
+
+    if (appointment.userId !== userId) {
+      return res.status(403).json({ message: "Access denied!" });
+    }
+
+    const deleted = await prisma.appointment.delete({
+      where: { id: Number(id) },
+    });
+
+    res.status(200).json({ message: "Appointment deleted!", deleted });
+  } catch (error) {
+    res.status(500).json({ error });
   }
 });
