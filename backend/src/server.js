@@ -84,7 +84,7 @@ app.post("/login", async (req, res) => {
 //-------------------------------------------
 //ESTIMATES
 //POST
-app.post("/estimates", async (req, res) => {
+app.post("/estimates", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
     const { title, clientName, description, price } = req.body;
@@ -100,7 +100,7 @@ app.post("/estimates", async (req, res) => {
 });
 
 //GET
-app.get("/estimates", async (req, res) => {
+app.get("/estimates", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
 
@@ -118,7 +118,7 @@ app.get("/estimates", async (req, res) => {
   }
 });
 
-app.get("/estimates/:id", async (req, res) => {
+app.get("/estimates/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const userEstimate = await prisma.estimate.findUnique({
@@ -140,7 +140,7 @@ app.get("/estimates/:id", async (req, res) => {
 });
 
 //PUT
-app.put("/estimates/:id", async (req, res) => {
+app.put("/estimates/:id", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
@@ -173,7 +173,7 @@ app.put("/estimates/:id", async (req, res) => {
 });
 
 //DELETE
-app.delete("/estimates/:id", async (req, res) => {
+app.delete("/estimates/:id", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
@@ -203,7 +203,7 @@ app.delete("/estimates/:id", async (req, res) => {
 //-------------------------------------------
 //TEMPLATES
 //POST
-app.post("/templates", async (req, res) => {
+app.post("/templates", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
     const { title, content } = req.body;
@@ -221,7 +221,7 @@ app.post("/templates", async (req, res) => {
 });
 
 //GET
-app.get("/templates", async (req, res) => {
+app.get("/templates", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
 
@@ -239,7 +239,7 @@ app.get("/templates", async (req, res) => {
   }
 });
 
-app.get("/templates/:id", async (req, res) => {
+app.get("/templates/:id", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
@@ -262,7 +262,7 @@ app.get("/templates/:id", async (req, res) => {
 });
 
 //PUT
-app.put("/templates/:id", async (req, res) => {
+app.put("/templates/:id", authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
@@ -286,6 +286,34 @@ app.put("/templates/:id", async (req, res) => {
     });
 
     res.status(200).json({ message: "Template updated:", updatedTemplate });
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+});
+
+//DELETE
+app.delete("/templates/:id", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+
+    const userTemplate = await prisma.template.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!userTemplate) {
+      return res.status(404).json({ message: "Template not found!" });
+    }
+
+    if (userId !== userTemplate.userId) {
+      return res.status(403).json({ message: "Access denied!" });
+    }
+
+    const deletedTemplate = await prisma.template.delete({
+      where: { id: Number(id) },
+    });
+
+    res.status(200).json({ message: "Template deleted!", deletedTemplate });
   } catch (error) {
     res.status(500).json({ error: error });
   }
@@ -418,7 +446,7 @@ app.delete("/appointments/:id", authMiddleware, async (req, res) => {
 //-------------------------------------------
 //PDFKit
 
-app.get("/estimates/:id/pdf", async (req, res) => {
+app.get("/estimates/:id/pdf", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.userId;
