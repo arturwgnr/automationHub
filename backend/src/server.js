@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import authMiddleware from "./middlewares/authMiddleware.js";
 
+import PDFDocument from "pdfkit";
+
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -410,5 +412,41 @@ app.delete("/appointments/:id", authMiddleware, async (req, res) => {
     res.status(200).json({ message: "Appointment deleted!", deleted });
   } catch (error) {
     res.status(500).json({ error });
+  }
+});
+
+//-------------------------------------------
+//PDFKit
+
+app.get("/estimates/:id/pdf", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId;
+    const userEstimate = await prisma.estimate.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!userEstimate) {
+      return res.status(404).json({ message: "Estimate not found" });
+    }
+
+    if (userId !== userEstimate.userId) {
+      return res.status(403).json({ message: "Access denied!" });
+    }
+
+    const doc = new PDFDocument();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "attachment; filename=estimate.pdf");
+
+    doc.pipe(res);
+
+    doc.fontSize(20).text(userEstimate.title);
+    doc.fontSize(14).text(`Client: ${userEstimate.clientName}`);
+    doc.text(`Description: ${userEstimate.description || "None"}`);
+    doc.text(`Price: €${userEstimate.price}`);
+
+    doc.end();
+  } catch (error) {
+    res.status(500).json({ error: error });
   }
 });
