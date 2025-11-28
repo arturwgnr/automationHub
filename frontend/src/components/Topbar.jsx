@@ -6,7 +6,9 @@ export default function Topbar() {
 
   return (
     <div className="topbar">
-      <h1 className="topbar-title">Automation Hub</h1>
+      <h1 onClick={() => nav("/dashboard")} className="topbar-title">
+        Automation Hub
+      </h1>
 
       <div className="topbar-actions">
         <button className="lang-btn">EN</button>
