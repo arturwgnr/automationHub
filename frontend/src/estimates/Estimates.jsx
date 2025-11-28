@@ -19,14 +19,19 @@ export default function Estimates() {
 
   async function createEstimate() {
     try {
-      const res = api.post("/estimates/", formData);
+      const payload = {
+        ...formData,
+        price: Number(formData.price),
+      };
+
+      const res = await api.post("/estimates", payload);
 
       console.log(res.data);
+      setIsCreating(false);
     } catch (error) {
-      console.error(error.message);
+      console.error(error.response?.data || error.message);
     }
   }
-
   return (
     <div>
       <Topbar />
